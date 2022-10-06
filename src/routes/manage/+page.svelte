@@ -13,6 +13,8 @@
 
 		if (title.trim() == "" || author.trim() == "") return;
 
+		console.log(content);
+
 		let file = await ipfs.add(
 			{
 				path,

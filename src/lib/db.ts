@@ -7,6 +7,7 @@ export interface ISong {
 	title: string;
 	author: string;
 	cid: string;
+	duration?: number;
 }
 
 export class MyDexie extends Dexie {
