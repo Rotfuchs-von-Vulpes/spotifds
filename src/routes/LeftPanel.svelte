@@ -13,8 +13,7 @@
 		padding: 25px 25px;
 	}
 
-	.left a,
-	h1 {
+	.left a {
 		text-shadow: 2px 2px 2px #000000;
 	}
 
