@@ -1,14 +1,12 @@
 <script lang="ts">
-	import ContextMenu, { createMenuStore } from "$lib/ContextMenu/ContextMenu.svelte";
+	import { createMenuStore } from "$lib/ContextMenu/ContextMenu.svelte";
 	import { db, type ISong } from "$lib/db";
 	import { currentlyPlayingSong, isPaused } from "$lib/stores";
 	import { useLiveQuery } from "$lib/utils";
 	import EditSongModal from "./EditSongModal.svelte";
 	import SongContextMenu from "./SongContextMenu.svelte";
 	import { page } from "$app/stores";
-	import { onMount } from 'svelte';
 
-	let songs: ISong[];
 	let uploadedSongs = useLiveQuery(() => db.songs.toArray(), []);
 
 	async function playSong(song: ISong) {
@@ -31,9 +29,12 @@
 
 		let params = new URLSearchParams();
 
-		params.set("title", song.title);
-		params.set("author", song.author);
-		params.set("cid", song.cid);
+		params.set('title', song.title);
+		params.set('author', song.author);
+		params.set('cid', song.cid);
+		if (song.duration) {
+			params.set('duration', song.duration.toString());
+		}
 
 		let shareUrl = `${$page.url.href}share?${params}`;
 
@@ -43,58 +44,6 @@
 			`A sharing link to "${song.title} - ${song.author}" was copied to your clipboard`
 		);
 	}
-
-	const calculateTime = (secs?: number) => {
-		if (!secs) return '--:--';
-		
-		const minutes = Math.floor(secs / 60);
-		const seconds = Math.floor(secs % 60);
-		const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
-		return `${minutes}:${returnedSeconds}`;
-	};
-
-	let songsContainerEl: HTMLElement;
-	let songListEls: HTMLElement[] = [];
-
-	onMount(async () => {
-		songsContainerEl.childNodes.forEach((el) => {
-			songListEls.push(el as HTMLElement);
-		});
-
-		songListEls.forEach((el) => {
-			console.log(el);
-		})
-
-		window.addEventListener('resize', (ev) => {
-			// console.log(ev);
-		})
-
-		let audio = document.createElement('audio');
-		songs = await db.songs.toArray();
-
-		let index = -1;
-
-		function next() {
-			let nextSong = songs[++index];
-
-			if (nextSong && nextSong.duration) {
-				next();
-			} else {
-				if (!nextSong) return;
-
-				audio.src = `https://ipfs.io/ipfs/${nextSong.cid}?filename=.mp3`
-			}
-		}
-
-		audio.onloadedmetadata = () => {
-			let duration = audio.duration;
-			console.log(duration);
-			db.songs.update(songs[index], { duration })
-			next();
-		};
-
-		next();
-	});
 </script>
 
 <EditSongModal bind:visible={showEditModal} bind:songId={selectedSongID} />
@@ -111,113 +60,40 @@
 />
 
 <h2>Uploaded Songs</h2>
-<div class="container" bind:this={songsContainerEl}>
+<div class="container">
+	<ul>
 		{#if $uploadedSongs}
 			{#each $uploadedSongs as song}
-				<div class="song"
+				<li
 					on:click={() => playSong(song)}
 					on:contextmenu={(e) => {
 						songMenuStore.open(e);
 						selectedSongID = song.id;
 					}}
 				>
-					<div class="image">
-						<img style="transform: scale(0.55)" src="quavers-pair.svg" alt="back">
-					</div>
-					<div class="title">
-						<h1>{song.title}</h1>
-					</div>
-					<div class="author">
-						<h2>{song.author}</h2>
-					</div>
-					<div class="time">
-						<h3>{calculateTime(song.duration)}</h3>
-					</div>
-				</div>
+					🎵 {song.title} by {song.author}
+				</li>
 			{/each}
 		{/if}
 </div>
 
 <style>
-
-	.song {
-		background-color: var(--primary-background-color);
-		margin-bottom: 5px;
-		display: grid;
-		grid-template-areas:
-			"icon title title"
-			"icon autor duration";
-		grid-template-columns: 100px auto 100px;
-		grid-template-rows: 50px 50px;
-		color: rgb(202, 202, 202);
-		text-overflow: clip;
+	.container {
+		background-color: var(--secondary-background-color);
+		height: 75%;
+		padding: 12px 12px;
 	}
 
-	.song:hover {
+	ul,
+	li {
+		list-style-type: none;
+		color: rgb(202, 202, 202);
+		transition: 0.3s;
+	}
+
+	li:hover {
 		cursor: pointer;
 		color: white;
-	}
-
-	.image {
-		grid-area: icon;
-		width: 100%;
-		height: 100%;
-	}
-
-	img {
-		width: 100%;
-		height: 100%;
-	}
-
-	.title {
-		grid-area: title;
-		height: 100%;
-		width: calc(100% - 10px); 
-		white-space: nowrap; 
-		overflow: hidden;
-		text-overflow: ellipsis; 
-		align-self: center;
-	}
-
-	.title h1 {
-		font-size: 30px;
-		margin-right: 10px;
-	}
-
-	/* .song:hover h1 {
-		top: -1px;
-		color: #fff;
-		-webkit-background-clip: none;
-		background-clip: none;
-		-webkit-text-fill-color: #fff;
-		display: inline-block;
-		position: relative;
-		animation: 3s linear 0s infinite alternate move;
-	}
-
-	@keyframes move {
-		0%,
-		25% {
-			transform: translateX(0%);
-			left: 0%;
-		}
-		75%,
-		100% {
-			transform: translateX(-100%);
-			left: 100%;
-		}
-	} */
-
-	.author {
-		height: 100%;
-		grid-area: autor;
-	}
-
-	.author h2 {
-		font-size: 17px;
-	}
-
-	.time {
-		grid-area: duration;
+		transition: 0.3s;
 	}
 </style>
